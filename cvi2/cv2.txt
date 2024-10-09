@@ -1,0 +1,38 @@
+# Definice uživatele a cest k souborům
+$user = "XY"
+$suspiciousListPath = "C:\Scripts\suspicious_programs.txt"
+$logPath = "C:\Scripts\process_log.txt"
+
+# Načtení seznamu podezřelých programů
+if (-not (Test-Path $suspiciousListPath)) {
+    Write-Error "Seznam podezřelých programů nebyl nalezen na cestě $suspiciousListPath."
+    exit
+}
+
+$suspiciousPrograms = Get-Content -Path $suspiciousListPath
+
+# Získání všech procesů a jejich vlastníků
+$allProcesses = Get-CimInstance Win32_Process
+
+foreach ($proc in $allProcesses) {
+    # Získání vlastníka procesu
+    $owner = $proc.GetOwner()
+    if ($owner.User -eq $user) {
+        if ($suspiciousPrograms -contains $proc.Name) {
+            # Logování pozitivního nálezu
+            $logEntry = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Detekován podezřelý proces: $($proc.Name) (PID: $($proc.ProcessId))"
+            Add-Content -Path $logPath -Value $logEntry
+
+            # Zabíjení procesu
+            try {
+                Stop-Process -Id $proc.ProcessId -Force
+                $logEntry = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Proces $($proc.Name) (PID: $($proc.ProcessId)) byl úspěšně ukončen."
+                Add-Content -Path $logPath -Value $logEntry
+            } catch {
+                $logEntry = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Chyba při ukončování procesu $($proc.Name) (PID: $($proc.ProcessId)): $_"
+                Add-Content -Path $logPath -Value $logEntry
+            }
+        }
+    }
+}
+

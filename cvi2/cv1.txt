@@ -1,0 +1,24 @@
+# Definice cesty v registru
+$registryPath = "HKCU:\Software\MyScript"
+$registryName = "RunCount"
+
+# Vytvoření klíče v registru, pokud neexistuje
+if (-not (Test-Path $registryPath)) {
+    New-Item -Path $registryPath -Force | Out-Null
+}
+
+# Načtení aktuální hodnoty RunCount, pokud existuje
+$currentCount = Get-ItemProperty -Path $registryPath -Name $registryName -ErrorAction SilentlyContinue
+
+if ($null -eq $currentCount) {
+    $newCount = 1
+} else {
+    $newCount = $currentCount.RunCount + 1
+}
+
+# Uložení nové hodnoty RunCount do registru
+Set-ItemProperty -Path $registryPath -Name $registryName -Value $newCount
+
+# Výstup aktuálního počtu spuštění
+Write-Output "Skript byl spuštěn $newCount krát."
+
