@@ -1,0 +1,24 @@
+@echo off
+REM Путь к файлу со списком процессов
+SET "PROCESS_LIST=pulk.txt"
+
+REM Проверка существования файла со списком процессов
+IF NOT EXIST "%PROCESS_LIST%" (
+    echo Ошибка: Файл "%PROCESS_LIST%" не найден.
+    exit /b 1
+)
+
+REM Цикл по каждому процессу в списке
+for /f "usebackq tokens=*" %%i in ("%PROCESS_LIST%") do (
+    REM Попытка завершить процесс и поиск строки "SUCCESS:"
+    taskkill /f /im "%%i" 2>&1 | find "SUCCESS:" >nul
+    REM Если команда find успешна, выводим дату, время и имя процесса
+    IF NOT ERRORLEVEL 1 (
+        echo %date% %time% %%i успешно завершен.
+    ) ELSE (
+        echo %date% %time% Не удалось завершить процесс: %%i
+    )
+)
+
+REM Завершение скрипта
+exit /b 0
