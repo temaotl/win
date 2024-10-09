@@ -1,0 +1,42 @@
+# Definice cesty v registru
+$registryPath = "HKCU\Software\MyScript"
+$registryName = "RunCount"
+
+# Funkce pro získání aktuální hodnoty RunCount pomocí reg query
+function Get-RunCount {
+    $query = reg query "HKCU\Software\MyScript" /v $registryName 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return 0
+    } else {
+        # Extrakce hodnoty z výstupu reg query
+        $line = $query | Where-Object { $_ -match $registryName }
+        if ($line) {
+            $parts = $line -split '\s+'
+            return [int]$parts[-1]
+        } else {
+            return 0
+        }
+    }
+}
+
+# Funkce pro nastavení nové hodnoty RunCount pomocí reg add
+function Set-RunCount($newCount) {
+    reg add "HKCU\Software\MyScript" /v $registryName /t REG_DWORD /d $newCount /f | Out-Null
+}
+
+# Kontrola existence klíče a vytvoření, pokud neexistuje
+$checkKey = reg query "HKCU\Software\MyScript" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    reg add "HKCU\Software\MyScript" /f | Out-Null
+}
+
+# Získání aktuálního počtu spuštění
+$currentCount = Get-RunCount
+$newCount = $currentCount + 1
+
+# Nastavení nové hodnoty RunCount
+Set-RunCount $newCount
+
+# Výstup aktuálního počtu spuštění
+Write-Output "Skript byl spuštěn $newCount krát."
+
